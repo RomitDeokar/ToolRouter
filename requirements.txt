@@ -1,0 +1,31 @@
+# Hard requirement -------------------------------------------------------------
+# numpy is the only dependency the package genuinely cannot run without.
+numpy>=1.23
+
+# Recommended: real semantic embeddings ----------------------------------------
+# Without this, EmbeddingModel falls back to a deterministic hash vector. That
+# fallback keeps the pipeline testable offline but is LEXICAL, not semantic --
+# it logs a loud warning so fallback numbers are never mistaken for real ones.
+fastembed>=0.3
+
+# Recommended: ANN index -------------------------------------------------------
+# Falls back to brute-force numpy cosine similarity, which is exact and fine at
+# this corpus size; faiss matters once the tool count grows.
+faiss-cpu>=1.7
+
+# Recommended: lexical scoring for the hybrid baseline -------------------------
+# Falls back to an in-tree BM25-Okapi implementation with identical ranking.
+rank-bm25>=0.2.2
+
+# Recommended: exact token accounting for the benchmark ------------------------
+# Falls back to a ~4-chars-per-token heuristic. Only affects the token columns.
+tiktoken>=0.5
+
+# Optional: LLM backend for the agent layer ------------------------------------
+# The agent also ships a dependency-free heuristic client, which is what the
+# tests and examples/agent_demo.py use, so this is not needed to run the demo.
+# openai>=1.30
+
+# Development ------------------------------------------------------------------
+# pytest>=7.4
+# ruff>=0.4

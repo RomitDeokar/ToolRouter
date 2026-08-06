@@ -1,0 +1,262 @@
+{
+  "_comment": "MOCK MANIFEST FOR LOCAL DEVELOPMENT ONLY. These tool names, descriptions and parameter schemas are hand-written and FICTIONAL. This is NOT the verified live Swiggy MCP tool list and must not be presented as such. Its purpose is to give the retrieval pipeline a realistically-shaped multi-server manifest to develop and benchmark against. Replace with a real manifest when you have access to one.",
+  "_mock": true,
+  "name": "commerce-mock",
+  "version": "0.1.0",
+  "servers": {
+    "food": {
+      "server": "food",
+      "description": "Restaurant food delivery.",
+      "tools": [
+        {
+          "name": "search_restaurants",
+          "description": "Search for restaurants available for delivery, filtered by cuisine, rating, price range or delivery time.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "cuisine": {"type": "string", "description": "Cuisine type, e.g. Italian, North Indian, Chinese."},
+              "location": {"type": "string", "description": "Delivery address or area name."},
+              "min_rating": {"type": "number", "description": "Minimum average rating, 0-5."},
+              "max_delivery_minutes": {"type": "integer", "description": "Only include restaurants delivering within this many minutes."},
+              "price_range": {"type": "string", "enum": ["budget", "moderate", "premium"]},
+              "veg_only": {"type": "boolean", "description": "Restrict to pure vegetarian restaurants."}
+            },
+            "required": ["location"]
+          },
+          "examples": ["find italian restaurants near me", "cheap north indian delivery under 30 minutes"]
+        },
+        {
+          "name": "get_restaurant_menu",
+          "description": "Fetch the full menu of a specific restaurant, including dish names, prices, categories and availability.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Identifier of the restaurant."},
+              "category": {"type": "string", "description": "Optional menu section filter, e.g. Desserts, Starters."},
+              "include_unavailable": {"type": "boolean", "description": "Include dishes currently out of stock."}
+            },
+            "required": ["restaurant_id"]
+          },
+          "examples": ["show me the menu", "what desserts do they have"]
+        },
+        {
+          "name": "add_food_item_to_cart",
+          "description": "Add a dish from a restaurant menu to the food delivery cart, with quantity and customisation options.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "item_id": {"type": "string", "description": "Menu item identifier."},
+              "quantity": {"type": "integer", "description": "Number of portions."},
+              "customisations": {"type": "array", "items": {"type": "string"}, "description": "Add-ons, e.g. extra cheese, no onion."}
+            },
+            "required": ["restaurant_id", "item_id"]
+          },
+          "examples": ["add two butter naan to my order"]
+        },
+        {
+          "name": "place_food_order",
+          "description": "Place the food delivery order for the current cart and start preparation and dispatch.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "cart_id": {"type": "string"},
+              "delivery_address": {"type": "string"},
+              "payment_method": {"type": "string", "enum": ["upi", "card", "cash", "wallet"]},
+              "delivery_instructions": {"type": "string", "description": "Notes for the delivery partner."},
+              "coupon_code": {"type": "string"}
+            },
+            "required": ["cart_id", "delivery_address"]
+          },
+          "examples": ["place my order and pay with upi", "checkout my food cart"]
+        },
+        {
+          "name": "track_food_delivery",
+          "description": "Get live status and estimated arrival time for an in-progress food delivery order, including delivery partner location.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "order_id": {"type": "string"},
+              "include_partner_location": {"type": "boolean"}
+            },
+            "required": ["order_id"]
+          },
+          "examples": ["where is my food", "how long until my order arrives"]
+        },
+        {
+          "name": "cancel_food_order",
+          "description": "Cancel a food delivery order that has not yet been dispatched, and request a refund if payment was already taken.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "order_id": {"type": "string"},
+              "reason": {"type": "string", "description": "Cancellation reason."},
+              "request_refund": {"type": "boolean"}
+            },
+            "required": ["order_id"]
+          },
+          "examples": ["cancel my order", "i want to cancel and get my money back"]
+        }
+      ]
+    },
+    "instamart": {
+      "server": "instamart",
+      "description": "Instant grocery and daily essentials delivery.",
+      "tools": [
+        {
+          "name": "search_grocery_products",
+          "description": "Search the instant grocery catalogue for packaged goods, fresh produce, dairy and household essentials by name, brand or category.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "query": {"type": "string", "description": "Product search text, e.g. paneer, atta, dish soap."},
+              "category": {"type": "string", "description": "Catalogue category, e.g. Dairy, Fruits, Snacks."},
+              "brand": {"type": "string"},
+              "max_price": {"type": "number"},
+              "in_stock_only": {"type": "boolean"}
+            },
+            "required": ["query"]
+          },
+          "examples": ["find amul butter", "search for fresh tomatoes"]
+        },
+        {
+          "name": "check_grocery_availability",
+          "description": "Check whether a grocery product is currently in stock at the nearest dark store and how soon it can be delivered.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product_id": {"type": "string"},
+              "pincode": {"type": "string", "description": "Delivery postal code."},
+              "quantity": {"type": "integer"}
+            },
+            "required": ["product_id"]
+          },
+          "examples": ["is this in stock near me", "can you deliver milk right now"]
+        },
+        {
+          "name": "add_grocery_to_basket",
+          "description": "Add a grocery product to the instant delivery basket with a chosen pack size and quantity.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "product_id": {"type": "string"},
+              "quantity": {"type": "integer"},
+              "pack_size": {"type": "string", "description": "e.g. 500g, 1L, pack of 6."}
+            },
+            "required": ["product_id"]
+          },
+          "examples": ["add one litre of milk to my basket"]
+        },
+        {
+          "name": "checkout_grocery_basket",
+          "description": "Confirm and pay for the instant grocery basket, scheduling immediate or slotted delivery of the essentials.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "basket_id": {"type": "string"},
+              "delivery_address": {"type": "string"},
+              "payment_method": {"type": "string", "enum": ["upi", "card", "cash", "wallet"]},
+              "delivery_slot": {"type": "string", "description": "Requested slot, or 'now' for instant delivery."}
+            },
+            "required": ["basket_id", "delivery_address"]
+          },
+          "examples": ["checkout my groceries", "pay for my basket and deliver now"]
+        },
+        {
+          "name": "reorder_grocery_essentials",
+          "description": "Recreate a previous grocery basket to repeat a routine essentials purchase without searching for each item again.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "previous_order_id": {"type": "string"},
+              "skip_unavailable": {"type": "boolean"}
+            },
+            "required": ["previous_order_id"]
+          },
+          "examples": ["buy the same groceries as last week", "repeat my usual essentials"]
+        }
+      ]
+    },
+    "dineout": {
+      "server": "dineout",
+      "description": "Restaurant table reservations and dine-in offers.",
+      "tools": [
+        {
+          "name": "discover_dineout_restaurants",
+          "description": "Discover restaurants accepting dine-in table bookings nearby, filtered by cuisine, ambience, distance and available discounts.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "cuisine": {"type": "string"},
+              "area": {"type": "string", "description": "Neighbourhood or landmark."},
+              "ambience": {"type": "string", "enum": ["casual", "fine_dining", "rooftop", "cafe", "bar"]},
+              "min_discount_percent": {"type": "integer"},
+              "open_now": {"type": "boolean"}
+            },
+            "required": ["area"]
+          },
+          "examples": ["rooftop places for dinner nearby", "fine dining with a discount tonight"]
+        },
+        {
+          "name": "check_table_availability",
+          "description": "Check which reservation time slots are free at a restaurant for a given date and party size before booking.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "date": {"type": "string", "description": "Reservation date, ISO 8601."},
+              "party_size": {"type": "integer"},
+              "preferred_time": {"type": "string", "description": "Preferred slot, 24h HH:MM."}
+            },
+            "required": ["restaurant_id", "date", "party_size"]
+          },
+          "examples": ["do they have a table free at 8pm", "what slots are open for six people"]
+        },
+        {
+          "name": "book_restaurant_table",
+          "description": "Reserve a table at a restaurant for dine-in, confirming the date, time, party size and seating preference.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "date": {"type": "string"},
+              "time": {"type": "string", "description": "Reservation time, 24h HH:MM."},
+              "party_size": {"type": "integer"},
+              "seating": {"type": "string", "enum": ["indoor", "outdoor", "bar", "private"]},
+              "occasion": {"type": "string", "description": "e.g. birthday, anniversary."}
+            },
+            "required": ["restaurant_id", "date", "time", "party_size"]
+          },
+          "examples": ["book a table for four tonight at eight", "reserve an outdoor table for my anniversary"]
+        },
+        {
+          "name": "cancel_table_reservation",
+          "description": "Cancel an existing dine-in table reservation and release the held slot.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "reservation_id": {"type": "string"},
+              "reason": {"type": "string"}
+            },
+            "required": ["reservation_id"]
+          },
+          "examples": ["cancel my table booking for tomorrow"]
+        },
+        {
+          "name": "get_dineout_offers",
+          "description": "List active dine-in deals, prepaid vouchers and percentage discounts available at a restaurant or across an area.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "area": {"type": "string"},
+              "offer_type": {"type": "string", "enum": ["flat_discount", "percentage", "voucher", "bank_offer"]}
+            },
+            "required": []
+          },
+          "examples": ["any deals at this restaurant", "show me bank offers for dining out"]
+        }
+      ]
+    }
+  }
+}

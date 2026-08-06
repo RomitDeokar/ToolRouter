@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main, genspark_ai_developer]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # Deliberately installs WITHOUT the optional extras. The suite must pass
+      # on numpy alone, exercising every fallback path (hash embedder, numpy
+      # cosine search, in-tree BM25, heuristic token counts). If a fallback
+      # ever breaks, this job catches it instead of a user discovering it.
+      - name: Install (core only, no optional extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test (offline fallbacks only)
+        run: pytest -q
+
+  test-with-extras:
+    name: tests + benchmark (real embeddings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install with benchmark extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[bench,dev]"
+
+      # With fastembed/faiss/rank_bm25/tiktoken present, the 4 @pytest.mark.semantic
+      # tests stop skipping and actually assert retrieval quality.
+      - name: Test (including semantic tests)
+        run: pytest -q
+
+      # Guards the headline claim in the README: the committed benchmark output
+      # must be reproducible from the committed dataset, not hand-edited.
+      - name: Reproduce CommerceBench
+        run: |
+          python -m toolrouter.bench.evaluate --out /tmp/bench_ci
+          python - <<'PY'
+          import json, sys
+
+          EXPECTED = {
+              "dense":           {"top_1_accuracy": 0.875},
+              "hybrid":          {"top_1_accuracy": 0.9479166666666666},
+              "confidence_gate": {"top_1_accuracy": 0.875},
+          }
+          failures = []
+          for baseline, metrics in EXPECTED.items():
+              got = json.load(open(f"/tmp/bench_ci/{baseline}.json"))
+              for metric, expected in metrics.items():
+                  actual = got[metric]
+                  # Accuracy is a deterministic function of the committed dataset
+                  # and the pinned model, so this should match closely. A loose
+                  # tolerance absorbs float/backend jitter, not real regressions.
+                  if abs(actual - expected) > 0.02:
+                      failures.append(
+                          f"{baseline}.{metric}: expected ~{expected:.4f}, got {actual:.4f}"
+                      )
+          if failures:
+              print("Benchmark numbers drifted from the committed README results:")
+              for line in failures:
+                  print("  -", line)
+              sys.exit(1)
+          print("Benchmark reproduced the committed results.")
+          PY
+
+      - name: Upload benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: /tmp/bench_ci

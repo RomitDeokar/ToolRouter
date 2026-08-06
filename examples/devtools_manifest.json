@@ -1,0 +1,182 @@
+{
+  "_comment": "MOCK MANIFEST FOR LOCAL DEVELOPMENT ONLY. These tool names, descriptions and parameter schemas are hand-written and FICTIONAL. They do not describe the real GitHub or Slack MCP servers and must not be presented as such. This file exists for two reasons: (1) to demonstrate multi-server routing via ToolRouter.from_manifests(), which is the case the project is really aimed at, and (2) to exercise a DIFFERENT manifest SHAPE from swiggy_manifest.json -- a flat top-level 'tools' array with a per-tool 'server' field and 'inputSchema' instead of 'parameters' -- proving the parser is genuinely generic rather than fitted to one layout.",
+  "_mock": true,
+  "name": "devtools-mock",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "search_code",
+      "server": "github",
+      "description": "Search code across repositories by keyword, language or path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Search keywords." },
+          "repo": { "type": "string", "description": "Limit to owner/repo." },
+          "language": { "type": "string", "description": "Programming language filter." },
+          "path": { "type": "string", "description": "Restrict to a path prefix." }
+        },
+        "required": ["query"]
+      },
+      "examples": [
+        "find where the retry logic is defined",
+        "search for usages of parse_manifest in the backend repo"
+      ]
+    },
+    {
+      "name": "open_pull_request",
+      "server": "github",
+      "description": "Open a new pull request from a head branch into a base branch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": { "type": "string", "description": "Target owner/repo." },
+          "head": { "type": "string", "description": "Source branch name." },
+          "base": { "type": "string", "description": "Branch to merge into." },
+          "title": { "type": "string" },
+          "body": { "type": "string", "description": "PR description in markdown." },
+          "draft": { "type": "boolean", "description": "Open as a draft PR." }
+        },
+        "required": ["repo", "head", "base", "title"]
+      },
+      "examples": [
+        "raise a PR from my feature branch into main",
+        "open a draft pull request for the parser rewrite"
+      ]
+    },
+    {
+      "name": "review_pull_request",
+      "server": "github",
+      "description": "Submit a review on an existing pull request, approving or requesting changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": { "type": "string" },
+          "pr_number": { "type": "integer", "description": "Pull request number." },
+          "verdict": {
+            "type": "string",
+            "enum": ["approve", "request_changes", "comment"]
+          },
+          "body": { "type": "string", "description": "Review comment text." }
+        },
+        "required": ["repo", "pr_number", "verdict"]
+      },
+      "examples": ["approve PR 412", "request changes on the migration PR"]
+    },
+    {
+      "name": "list_open_issues",
+      "server": "github",
+      "description": "List open issues in a repository, filtered by label or assignee.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": { "type": "string" },
+          "label": { "type": "string", "description": "Filter by issue label." },
+          "assignee": { "type": "string", "description": "Filter by assigned username." },
+          "limit": { "type": "integer", "description": "Maximum issues to return." }
+        },
+        "required": ["repo"]
+      },
+      "examples": ["what bugs are still open", "show issues assigned to me"]
+    },
+    {
+      "name": "create_issue",
+      "server": "github",
+      "description": "File a new issue in a repository with a title, body and labels.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": { "type": "string" },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "labels": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Labels to attach."
+          }
+        },
+        "required": ["repo", "title"]
+      },
+      "examples": ["file a bug about the flaky test", "open an issue to track the reranker work"]
+    },
+    {
+      "name": "trigger_workflow_run",
+      "server": "github",
+      "description": "Trigger a CI workflow run on a given branch or commit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo": { "type": "string" },
+          "workflow": { "type": "string", "description": "Workflow file name or id." },
+          "ref": { "type": "string", "description": "Branch, tag or commit SHA." }
+        },
+        "required": ["repo", "workflow", "ref"]
+      },
+      "examples": ["re-run the test suite on main", "kick off the release workflow"]
+    },
+    {
+      "name": "post_channel_message",
+      "server": "slack",
+      "description": "Post a message to a Slack channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": { "type": "string", "description": "Channel name or id." },
+          "text": { "type": "string", "description": "Message body." },
+          "thread_ts": { "type": "string", "description": "Reply inside this thread." }
+        },
+        "required": ["channel", "text"]
+      },
+      "examples": ["tell the team the deploy is done", "post the release notes to #engineering"]
+    },
+    {
+      "name": "search_messages",
+      "server": "slack",
+      "description": "Search past Slack messages by keyword, channel or author.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string" },
+          "channel": { "type": "string" },
+          "from_user": { "type": "string", "description": "Restrict to this author." },
+          "after": { "type": "string", "description": "ISO date lower bound." }
+        },
+        "required": ["query"]
+      },
+      "examples": [
+        "what did we decide about the vector store",
+        "find the thread where the outage was discussed"
+      ]
+    },
+    {
+      "name": "schedule_reminder",
+      "server": "slack",
+      "description": "Schedule a reminder for a user or channel at a future time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": { "type": "string", "description": "User or channel to remind." },
+          "text": { "type": "string" },
+          "at": { "type": "string", "description": "ISO timestamp for the reminder." }
+        },
+        "required": ["target", "text", "at"]
+      },
+      "examples": ["remind me to review the PR tomorrow morning"]
+    },
+    {
+      "name": "set_user_status",
+      "server": "slack",
+      "description": "Set the current user's Slack status text, emoji and expiry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "emoji": { "type": "string", "description": "Status emoji, e.g. :calendar:." },
+          "expires_at": { "type": "string", "description": "ISO timestamp when the status clears." }
+        },
+        "required": ["text"]
+      },
+      "examples": ["set my status to in a meeting until 3pm"]
+    }
+  ]
+}

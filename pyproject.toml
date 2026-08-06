@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toolrouter"
+version = "0.1.0"
+description = "Semantic tool retrieval for MCP agents: route to the relevant tools instead of stuffing every schema into every prompt."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["mcp", "llm", "agents", "retrieval", "tool-use", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+
+# numpy is the only hard requirement. Everything that materially improves
+# quality (real embeddings, faiss, BM25, exact token counts) is optional and
+# has an in-tree fallback, so `pip install toolrouter` always yields a working
+# pipeline -- see the [project.optional-dependencies] extras below.
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+# Real semantic embeddings. Without this the package falls back to a
+# deterministic hash embedder, which is lexical, not semantic. The fallback
+# logs a loud warning precisely so nobody benchmarks it by accident.
+embeddings = ["fastembed>=0.3"]
+# Alternative embedding backend, tried if fastembed is unavailable.
+sentence-transformers = ["sentence-transformers>=2.2"]
+# ANN index. Falls back to brute-force numpy cosine similarity.
+faiss = ["faiss-cpu>=1.7"]
+# Lexical scoring for the hybrid baseline. Falls back to an in-tree BM25-Okapi.
+bm25 = ["rank-bm25>=0.2.2"]
+# Exact token accounting for the benchmark. Falls back to ~4-chars-per-token.
+tokens = ["tiktoken>=0.5"]
+# Optional LLM backend for the agent layer; the agent also ships a
+# dependency-free heuristic client used by the tests and the demo.
+openai = ["openai>=1.30"]
+
+# Everything needed to reproduce the published benchmark numbers exactly.
+bench = [
+    "fastembed>=0.3",
+    "faiss-cpu>=1.7",
+    "rank-bm25>=0.2.2",
+    "tiktoken>=0.5",
+]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+]
+all = [
+    "fastembed>=0.3",
+    "faiss-cpu>=1.7",
+    "rank-bm25>=0.2.2",
+    "tiktoken>=0.5",
+    "openai>=1.30",
+]
+
+[project.scripts]
+toolrouter = "toolrouter.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/RomitDeokar/ToolRouter"
+Repository = "https://github.com/RomitDeokar/ToolRouter"
+
+[tool.setuptools.packages.find]
+include = ["toolrouter*"]
+
+[tool.setuptools.package-data]
+toolrouter = ["bench/dataset.jsonl", "bench/dataset.meta.json"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "semantic: needs a real embedding model (skipped when unavailable).",
+]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # function calls in argument defaults (argparse patterns)
+    "SIM108", # ternary-vs-if is a readability call, not a rule
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]

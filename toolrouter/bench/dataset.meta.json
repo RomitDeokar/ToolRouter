@@ -1,0 +1,14 @@
+{
+  "manifest": "examples/swiggy_manifest.json",
+  "generation_mode": "template",
+  "seed": 20240501,
+  "tools": 16,
+  "queries": 192,
+  "by_category": {
+    "clean": 96,
+    "ambiguous": 48,
+    "typo": 32,
+    "adversarial": 16
+  },
+  "per_tool_target": 12
+}
