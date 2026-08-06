@@ -200,6 +200,25 @@ def test_explain_cites_matched_query_terms():
     assert "book" in rows[0]["reason"]
 
 
+def test_explain_subject_verb_agreement_for_name_matches():
+    """The verb must agree with the number of matched terms.
+
+    Pluralising only the noun produced "query term 'table' appear in the tool
+    name" for every single-term match -- which is the majority of explanations,
+    so the most-read sentence in the output was the ungrammatical one.
+    """
+    tool = Tool("book_table", "Reserve a spot.", {"properties": {}}, "dineout")
+
+    single = explain_candidates("find a table", [_scored("book_table", 0.9, tool=tool)])
+    assert single[0]["matched_terms"]["name"] == ["table"]
+    assert "query term 'table' appears in the tool name" in single[0]["reason"]
+
+    plural = explain_candidates("book a table", [_scored("book_table", 0.9, tool=tool)])
+    assert len(plural[0]["matched_terms"]["name"]) == 2
+    assert "query terms 'book', 'table' appear in the tool name" in plural[0]["reason"]
+    assert "appears" not in plural[0]["reason"]
+
+
 def test_explain_reports_parameter_matches():
     tool = Tool("book_table", "Reserve a table.", {"properties": {"party_size": {}}}, "dineout")
     rows = explain_candidates("what party size", [_scored("book_table", 0.9, tool=tool)])

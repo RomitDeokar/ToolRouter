@@ -343,6 +343,9 @@ class RoutedAgent:
 
     Examples
     --------
+    The tool below is what this actually returns on the sample manifest under the
+    default offline embedder, not an idealised answer.
+
     >>> from toolrouter import ToolRouter                        # doctest: +SKIP
     >>> agent = RoutedAgent(ToolRouter.from_manifest("examples/swiggy_manifest.json"))
     ...                                                          # doctest: +SKIP

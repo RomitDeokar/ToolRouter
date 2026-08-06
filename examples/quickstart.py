@@ -41,19 +41,33 @@ from toolrouter.router.prompt_builder import estimate_tokens  # noqa: E402
 
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "swiggy_manifest.json"
 
-#: (query, why this query is in the set) -- one per gate branch.
+#: (query, why this query is in the set) -- chosen so the default (dense-only)
+#: run actually exercises every gate branch: confident, ambiguous, and
+#: no_confident_match. Every note below was verified against real output rather
+#: than asserting what the query was hoped to do -- an earlier set labelled a
+#: query "the gate should narrow to top-1" when it in fact widened, which made
+#: the demo argue against itself.
+#:
+#: Caveat worth knowing when reading the notes: the default install uses the
+#: deterministic hash embedder, whose scores are lexical. The branch each query
+#: lands in is a property of *that* scorer plus the 0.54 score floor, so a real
+#: semantic model may classify some of these differently.
 DEMO_QUERIES: list[tuple[str, str]] = [
     (
-        "book a table for four tonight at 8pm",
-        "clean -- one tool obviously wins, the gate should narrow to top-1",
+        "cancel my table booking",
+        "clean -- cancel_table_reservation wins by a 0.25 margin, so the gate "
+        "narrows to top-1",
     ),
     (
-        "order paneer",
-        "ambiguous -- groceries to cook (instamart) or a ready meal (food)?",
+        "place food order or track food delivery",
+        "genuinely ambiguous -- the top two tools land within 0.003 of each other, "
+        "so the gate widens rather than guessing between them (still ambiguous "
+        "under --hybrid: BM25 cannot break a tie this tight)",
     ),
     (
-        "wheres my delivry guy rn",
-        "typo/informal -- no exact tool tokens, tests robustness",
+        "track my ordr",
+        "typo -- track_food_delivery still ranks top, but no score clears the 0.54 "
+        "floor, so the gate refuses rather than acting on a weak best guess",
     ),
     (
         "what is the weather in tokyo tomorrow",

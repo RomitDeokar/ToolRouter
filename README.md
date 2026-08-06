@@ -86,7 +86,7 @@ Only `numpy` is a hard dependency. Every other component degrades gracefully:
 | Lexical scores | `rank_bm25` | in-tree BM25-Okapi (identical ranking) |
 | Token counting | `tiktoken` | ~4-chars-per-token heuristic |
 
-The hash-embedding fallback exists so the pipeline and its 229 tests run
+The hash-embedding fallback exists so the pipeline and its 230 tests run
 offline with zero downloads. It is **not** a semantic model, and it warns every
 time it activates — fallback-quality embeddings would quietly wreck benchmark
 numbers if anyone forgot which mode they were in.
@@ -296,22 +296,44 @@ toolrouter/
 │   ├── agent.py          # routed agent loop (heuristic or OpenAI client)
 │   └── cli.py            # unified `toolrouter` command
 ├── examples/             # mock manifest + quickstart + agent demo
-├── tests/                # 229 tests, hermetic (offline embedder by default)
+├── tests/                # 230 tests, hermetic (offline embedder by default)
 ├── bench_results/        # committed benchmark output — the Results table's source
 ├── ci/                   # GitHub Actions workflow (see ci/README.md to enable)
+├── docs/spec/            # the original design spec, kept verbatim
 ├── ARCHITECTURE.md       # component contracts (source of truth)
 ├── BENCHMARK.md          # CommerceBench methodology
 └── BUILD_PLAN.md         # build order
 ```
 
+### Where the code departs from `docs/spec/`
+
+`docs/spec/` is the original design brief, committed unedited so the build can be
+checked against what was actually asked for. All five deliverables and the whole
+`API.md` surface (`load_manifest` / `index_tools` / `retrieve` / `explain` /
+`benchmark`) are implemented. Two items in `DATA_MODEL.md` are deliberately not,
+and silently diverging from a spec is worse than diverging openly:
+
+- **`Tool.embedding` does not exist.** Storing each tool's vector on the tool
+  itself would duplicate state that the vector index already owns, and make a
+  `Tool` silently invalid whenever the embedding model changed. Vectors live in
+  `VectorStore`, keyed by tool name; `Tool.to_embedding_text()` defines what gets
+  embedded, and `Tool` stays a plain description of the manifest entry.
+- **`QueryResult` is called `RouteResult`** and carries more than the spec's four
+  fields. `retrieved_tools`/`scores` are one thing in practice, not two — a tool
+  divorced from its score invites misaligned parallel lists, so they are paired
+  in `ScoredTool` and exposed as `.tools` (post-gate) plus `.scored`. `confidence`
+  is a `gate` dict rather than a bare number because a scalar cannot express *why*
+  the gate widened; `.candidates` keeps the pre-gate list so the decision is
+  auditable, and `.latency_ms` is what the benchmark measures.
+
 ## Tests
 
 ```bash
 pip install -e ".[dev]"           # core only (numpy)
-pytest                             # 223 passed, 6 skipped in ~1s
+pytest                             # 224 passed, 6 skipped in ~1s
 
 pip install -e ".[bench,dev]"     # + fastembed, faiss, rank_bm25, tiktoken
-pytest                             # 229 passed in ~5s
+pytest                             # 230 passed in ~5s
 ```
 
 The suite forces the hash embedder (`TOOLROUTER_FORCE_FALLBACK=1`) so it is

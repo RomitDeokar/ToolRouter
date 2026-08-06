@@ -126,10 +126,14 @@ def explain_candidates(
             f"Ranked #{rank} with a {band} {_source_phrase(candidate)} of {score:.3f}"
         ]
         if name_hits:
+            plural = len(name_hits) > 1
             clauses.append(
-                f"query term{'s' if len(name_hits) > 1 else ''} "
+                f"query term{'s' if plural else ''} "
                 + ", ".join(f"'{t}'" for t in name_hits)
-                + " appear in the tool name"
+                # The verb has to agree with the subject too: pluralising only
+                # the noun produced "query term 'table' appear in the tool name"
+                # in every single-match explanation -- which is most of them.
+                + f" appear{'' if plural else 's'} in the tool name"
             )
         if desc_hits:
             clauses.append(
