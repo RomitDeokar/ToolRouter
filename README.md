@@ -1,4 +1,4 @@
-# Toolrouter
+# ToolRouter
 
 **Semantic tool retrieval for MCP agents.** Retrieve only the tools a query
 actually needs *before* the LLM reasons, instead of stuffing every tool schema
